@@ -102,4 +102,5 @@
        (print-help)
        (sb-ext:exit :code 1)))))
 
-(main)
+(unless (member :lext-build *features*)
+  (main))
