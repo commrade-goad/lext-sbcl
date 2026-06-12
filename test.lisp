@@ -64,6 +64,11 @@
 
   ;; Validate reference operator fall-through behavior (untyped direct deref)
   (assert (not (null-ptr? pkt)))
+  (assert (null-ptr? (null-ptr)))
+
+  ;; Validate temporary C string stack allocation and casting back
+  (with-c-string (s "TestString")
+    (assert (string= (c-string-from-ptr s) "TestString")))
 
   ;; Validate hardware-pointer math and reconstruction back to layout pointers
   (let* ((raw-sap (ptr+ pkt 8)) ;; step past status and alignment padding

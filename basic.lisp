@@ -189,6 +189,14 @@
   "Returns true if the foreign pointer address targets absolute structural zero."
   (sb-sys:sap= (sb-alien:alien-sap ptr) (sb-sys:int-sap 0)))
 
+(defun null-ptr ()
+  "Returns a typed null pointer (void*)."
+  (sb-alien:sap-alien (sb-sys:int-sap 0) (* t)))
+
+(defmacro c-string-from-ptr (ptr)
+  "Decodes a raw foreign pointer (char *) to a native Lisp string."
+  `(sb-alien:cast ,ptr sb-alien:c-string))
+
 (defmacro ptr+ (sap-pointer byte-offset)
   "Executes lightning-fast manual address math skips over pointer chains or
    iterating through raw byte arrays."
@@ -224,6 +232,24 @@
   "Allocates a strict hardware-stack tracking array frame. Automatically freed on block exit."
   `(sb-alien:with-alien ((,var (sb-alien:array ,(translate-ffi-type type) ,count)))
      ,@body))
+
+(defmacro with-c-string ((var lisp-string) &body body)
+  "Transforms a Lisp string into a temporary null-terminated C string (char *), freed on exit."
+  (let ((g-str (gensym "STR"))
+        (g-len (gensym "LEN"))
+        (g-idx (gensym "IDX"))
+        (g-alloc (gensym "ALLOC")))
+    `(let* ((,g-str ,lisp-string)
+            (,g-len (length ,g-str)))
+       (let* ((,g-alloc (sb-alien:make-alien (sb-alien:array char 1) (1+ ,g-len)))
+              (,var (sb-alien:cast ,g-alloc (* char))))
+         (unwind-protect
+              (progn
+                (loop for ,g-idx from 0 below ,g-len
+                      do (setf (sb-alien:deref ,var ,g-idx) (char-code (char ,g-str ,g-idx))))
+                (setf (sb-alien:deref ,var ,g-len) 0)
+                ,@body)
+            (sb-alien:free-alien ,g-alloc))))))
 
 (defmacro with-c-array ((var type lisp-list) &body body)
   "Transforms a dynamic Lisp list of numbers into a contiguous native C vector array.
