@@ -98,7 +98,8 @@ LExt's standard library is declared in [basic.lisp](basic.lisp). When executing 
 - `float`
 - `double`
 - `string` (converts between Common Lisp strings and C `char *` pointers)
-- `pointer` (generic `void *` pointer)
+- `pointer` or `(* void)` (generic `void *` pointer)
+- `(* <type>)` (typed pointer, e.g., `(* uint32)`, `(* char)`)
 - Sized integers: `int8`, `int16`, `int32`, `int64`, `uint8`, `uint16`, `uint32`, `uint64`
 
 ### Memory Operations

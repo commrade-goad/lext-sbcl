@@ -40,8 +40,13 @@
   (payload variant-t)
   (node-id uint64))
 
+(define-c-struct pointer-test-t
+  (void-ptr (* void))
+  (uint32-ptr (* uint32)))
+
 ;; Validate sizing checks
 (assert (> (c-size packet-t) 0))
+(assert (> (c-size pointer-test-t) 0))
 
 (with-heap-alloc (pkt packet-t)
   ;; Clear foreign block space completely via custom memset

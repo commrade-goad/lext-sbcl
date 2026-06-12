@@ -85,31 +85,38 @@
   (defun translate-ffi-type (type)
     "Maps clean shorthand symbols and explicit bit-width specifiers to native
      compiler primitive descriptors."
-    (case type
-      ;; Standard Unspecified Primitives
-      (void        'sb-alien:void)
-      (int         'sb-alien:int)
-      (uint        'sb-alien:unsigned-int)
-      (long        'sb-alien:long)
-      (ulong       'sb-alien:unsigned-long)
-      (size_t      'sb-alien:unsigned-long)
-      (char        'sb-alien:char)
-      (uchar       'sb-alien:unsigned-char)
-      (float       'sb-alien:single-float)
-      (double      'sb-alien:double-float)
-      (string      'sb-alien:c-string)
-      (pointer     '(* t))
+    (cond
+      ((and (listp type) (eq (car type) '*))
+       (let ((inner (second type)))
+         (if (eq inner 'void)
+             '(* t)
+             `(* ,(translate-ffi-type inner)))))
+      (t
+       (case type
+         ;; Standard Unspecified Primitives
+         (void        'sb-alien:void)
+         (int         'sb-alien:int)
+         (uint        'sb-alien:unsigned-int)
+         (long        'sb-alien:long)
+         (ulong       'sb-alien:unsigned-long)
+         (size_t      'sb-alien:unsigned-long)
+         (char        'sb-alien:char)
+         (uchar       'sb-alien:unsigned-char)
+         (float       'sb-alien:single-float)
+         (double      'sb-alien:double-float)
+         (string      'sb-alien:c-string)
+         (pointer     '(* t))
 
-      ;; Explicit Sized Fixed-Width Integer Types
-      (int8        '(sb-alien:signed 8))
-      (int16       '(sb-alien:signed 16))
-      (int32       '(sb-alien:signed 32))
-      (int64       '(sb-alien:signed 64))
-      (uint8       '(sb-alien:unsigned 8))
-      (uint16      '(sb-alien:unsigned 16))
-      (uint32      '(sb-alien:unsigned 32))
-      (uint64      '(sb-alien:unsigned 64))
-      (t type))))
+         ;; Explicit Sized Fixed-Width Integer Types
+         (int8        '(sb-alien:signed 8))
+         (int16       '(sb-alien:signed 16))
+         (int32       '(sb-alien:signed 32))
+         (int64       '(sb-alien:signed 64))
+         (uint8       '(sb-alien:unsigned 8))
+         (uint16      '(sb-alien:unsigned 16))
+         (uint32      '(sb-alien:unsigned 32))
+         (uint64      '(sb-alien:unsigned 64))
+         (t type))))))
 
 
 ;; =========================================================================
