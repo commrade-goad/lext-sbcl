@@ -98,8 +98,8 @@
   (format *error-output* "  lext -h/--help~%")
   (format *error-output* "  lext -v/--version~%")
   (format *error-output* "~%~C[1mOPTIONS:~C[0m~%" #\Esc #\Esc)
-  (format *error-output* "  ~C[32m<input-file>~C[0m        The template HTML/text file to render @@ forms.~%" #\Esc #\Esc)
-  (format *error-output* "  ~C[32m[output-file]~C[0m       (Optional) File path to write the output. Defaults to stdout.~%" #\Esc #\Esc)
+  (format *error-output* "  ~C[32m<input-file>~C[0m       The template HTML/text file to render @@ forms.~%" #\Esc #\Esc)
+  (format *error-output* "  ~C[32m[output-file]~C[0m      (Optional) File path to write the output. Defaults to stdout.~%" #\Esc #\Esc)
   (format *error-output* "  ~C[32m-s, --script~C[0m       Run <script-file> via SBCL with LExt standard library preloaded.~%" #\Esc #\Esc)
   (format *error-output* "  ~C[32m-h, --help~C[0m         Show this help information.~%" #\Esc #\Esc)
   (format *error-output* "  ~C[32m-v, --version~C[0m      Show LExt version information.~%~%" #\Esc #\Esc))
@@ -133,9 +133,10 @@
                                            :if-does-not-exist :create)
                         (write-string (get-basic-lisp-source) out))
                       (let ((process (sb-ext:run-program "sbcl"
-                                                         (list "--noinform"
-                                                               "--load" (namestring temp-path)
-                                                               "--script" script-path)
+                                                         (append (list "--noinform"
+                                                                       "--load" (namestring temp-path)
+                                                                       "--script" script-path)
+                                                                 (cddr user-args))
                                                          :search t
                                                          :output *standard-output*
                                                          :error *error-output*
