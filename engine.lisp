@@ -63,6 +63,8 @@
 
 ;; --- Command Line Execution & Premium UI/UX ---
 
+(defvar *engine-version* "1.1.0-sbcl")
+
 (defvar *basic-lisp-source*
   #+lext-build
   #.(let* ((source-path (or *compile-file-pathname* *load-pathname* *default-pathname-defaults*))
@@ -112,12 +114,12 @@
       ((member first-arg '("-h" "--help") :test #'string=)
        (print-help)
        (sb-ext:exit :code 0))
-      
+
       ;; Version flag
       ((member first-arg '("-v" "--version") :test #'string=)
-       (format *error-output* "~C[1;36mLExt~C[0m version 1.1.0~%" #\Esc #\Esc)
+       (format *error-output* "~C[1;36mLExt~C[0m version ~A~%" #\Esc #\Esc *engine-version*)
        (sb-ext:exit :code 0))
-      
+
       ;; Script flag
       ((member first-arg '("-s" "--script") :test #'string=)
        (let ((script-path (second user-args)))
@@ -148,13 +150,13 @@
                (format *error-output* "~C[1;31m[Error]~C[0m No script file specified.~%~%" #\Esc #\Esc)
                (print-help)
                (sb-ext:exit :code 1)))))
-      
+
       ;; Unknown option check
       ((and first-arg (char= (char first-arg 0) #\-))
        (format *error-output* "~C[1;31m[Error]~C[0m Unknown option: ~A~%~%" #\Esc #\Esc first-arg)
        (print-help)
        (sb-ext:exit :code 1))
-      
+
       ;; File rendering
       (first-arg
        (let ((input-file first-arg)
@@ -180,7 +182,7 @@
                (error (e)
                  (format *error-output* "~C[1;31m[Error]~C[0m Failed to render: ~A~%" #\Esc #\Esc e)
                  (sb-ext:exit :code 1))))))
-      
+
       ;; No arguments
       (t
        (print-help)
