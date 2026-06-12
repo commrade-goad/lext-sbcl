@@ -35,7 +35,7 @@ To compile the template engine and its embedded stdlib into a standalone optimiz
 ```bash
 sbcl --script build.lisp
 ```
-This performs a high-optimization compilation of `basic.lisp` and `engine.lisp`, embeds `basic.lisp` inside the runtime image, and saves it as the optimized executable `./lext`.
+This performs a high-optimization compilation of `basic.lisp` and `lext.lisp`, embeds `basic.lisp` inside the runtime image, and saves it as the optimized executable `./lext`.
 
 ---
 

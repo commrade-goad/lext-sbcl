@@ -1,4 +1,4 @@
-;;;; engine.lisp - High-Performance Template Renderer for SBCL Matrix Engine
+;;;; lext.lisp - High-Performance Template Renderer for SBCL Matrix Engine
 (in-package :cl-user)
 
 (eval-when (:compile-toplevel :load-toplevel :execute)
@@ -61,9 +61,18 @@
                    ;; Route normal HTML characters straight to our output buffer
                    (t (write-char char output-buffer))))))))
 
+(defun trim-right (str)
+  (string-right-trim '(#\Newline #\Space #\Tab #\Return) str))
+
+(defun get-git-hash ()
+  (trim-right
+   (with-output-to-string (out)
+     (sb-ext:run-program "/usr/bin/git" '("rev-parse" "--short" "HEAD") :output out)))
+  )
+
 ;; --- Command Line Execution & Premium UI/UX ---
 
-(defvar *engine-version* "1.1.0-sbcl")
+(defvar *engine-version* (format nil "1.1.0-~A" (get-git-hash)))
 
 (defvar *basic-lisp-source*
   #+lext-build

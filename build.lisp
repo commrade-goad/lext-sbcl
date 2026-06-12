@@ -5,21 +5,21 @@
 
 (format t "Starting optimized build of LExt...~%")
 
-;; Push the build feature to prevent auto-running main in engine.lisp
+;; Push the build feature to prevent auto-running main in lext.lisp
 (pushnew :lext-build *features*)
 
 ;; Compile and load the files
 (handler-bind ((warning #'muffle-warning))
   (format t "Compiling standard library (basic.lisp)...~%")
   (load (compile-file "basic.lisp"))
-  (format t "Compiling template engine (engine.lisp)...~%")
-  (load (compile-file "engine.lisp")))
+  (format t "Compiling template lext (lext.lisp)...~%")
+  (load (compile-file "lext.lisp")))
 
 ;; Clean up intermediate compilation artifacts
 (format t "Cleaning up intermediate build files...~%")
 (ignore-errors
  (delete-file "basic.fasl")
- (delete-file "engine.fasl"))
+ (delete-file "lext.fasl"))
 
 ;; Save the optimized standalone binary executable
 (format t "Saving executable 'lext'...~%")
