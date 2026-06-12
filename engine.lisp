@@ -2,7 +2,9 @@
 (in-package :cl-user)
 
 (eval-when (:compile-toplevel :load-toplevel :execute)
-  (load "basic.lisp"))
+  (let* ((source-path (or *compile-file-pathname* *load-pathname* *default-pathname-defaults*))
+         (basic-path (merge-pathnames "basic.lisp" source-path)))
+    (load basic-path)))
 
 (defun handle-lisp-tag (file-stream)
   "Triggered when @@ is found. Uses CL's native reader to parse and evaluate the next form."
@@ -61,13 +63,30 @@
 
 ;; --- Command Line Execution & Premium UI/UX ---
 
-(defun find-basic-lisp ()
-  (let ((path1 (merge-pathnames "basic.lisp" sb-ext:*runtime-pathname*))
-        (path2 (merge-pathnames "basic.lisp" *default-pathname-defaults*)))
-    (cond
-      ((probe-file path1) path1)
-      ((probe-file path2) path2)
-      (t nil))))
+(defvar *basic-lisp-source*
+  #+lext-build
+  #.(let* ((source-path (or *compile-file-pathname* *load-pathname* *default-pathname-defaults*))
+           (basic-path (merge-pathnames "basic.lisp" source-path)))
+      (with-open-file (stream basic-path :direction :input)
+        (let ((seq (make-string (file-length stream))))
+          (read-sequence seq stream)
+          seq)))
+  #-lext-build
+  nil)
+
+(defun get-basic-lisp-source ()
+  (or *basic-lisp-source*
+      (let* ((source-path (or *load-pathname* *compile-file-pathname* *default-pathname-defaults*))
+             (basic-path (merge-pathnames "basic.lisp" source-path)))
+        (with-open-file (stream basic-path :direction :input)
+          (let ((seq (make-string (file-length stream))))
+            (read-sequence seq stream)
+            seq)))))
+
+(defun get-temp-lisp-file ()
+  (let ((rand (random 1000000))
+        (time (get-universal-time)))
+    (pathname (format nil "/tmp/lext-basic-~A-~A.lisp" time rand))))
 
 (defun print-help ()
   (format *error-output* "~C[1;36mLExt Template Engine~C[0m - High-Performance SBCL template renderer~%" #\Esc #\Esc)
@@ -103,23 +122,28 @@
       ((member first-arg '("-s" "--script") :test #'string=)
        (let ((script-path (second user-args)))
          (if script-path
-             (let ((basic-path (find-basic-lisp)))
-               (if basic-path
-                   (let ((process (sb-ext:run-program "sbcl"
-                                                      (list "--load" (namestring basic-path)
-                                                            "--script" script-path)
-                                                      :search t
-                                                      :output *standard-output*
-                                                      :error *error-output*
-                                                      :input *standard-input*)))
-                     (if process
-                         (sb-ext:exit :code (sb-ext:process-exit-code process))
-                         (progn
-                           (format *error-output* "~C[1;31m[Error]~C[0m Failed to launch sbcl.~%" #\Esc #\Esc)
-                           (sb-ext:exit :code 1))))
-                   (progn
-                     (format *error-output* "~C[1;31m[Error]~C[0m Could not locate basic.lisp.~%" #\Esc #\Esc)
-                     (sb-ext:exit :code 1))))
+             (let ((temp-path (get-temp-lisp-file)))
+               (unwind-protect
+                    (progn
+                      (with-open-file (out temp-path
+                                           :direction :output
+                                           :if-exists :supersede
+                                           :if-does-not-exist :create)
+                        (write-string (get-basic-lisp-source) out))
+                      (let ((process (sb-ext:run-program "sbcl"
+                                                         (list "--noinform"
+                                                               "--load" (namestring temp-path)
+                                                               "--script" script-path)
+                                                         :search t
+                                                         :output *standard-output*
+                                                         :error *error-output*
+                                                         :input *standard-input*)))
+                        (if process
+                            (sb-ext:exit :code (sb-ext:process-exit-code process))
+                            (progn
+                              (format *error-output* "~C[1;31m[Error]~C[0m Failed to launch sbcl.~%" #\Esc #\Esc)
+                              (sb-ext:exit :code 1)))))
+                 (ignore-errors (delete-file temp-path))))
              (progn
                (format *error-output* "~C[1;31m[Error]~C[0m No script file specified.~%~%" #\Esc #\Esc)
                (print-help)
