@@ -8,29 +8,33 @@
 
 (defun handle-lisp-tag (file-stream)
   "Triggered when @@ is found. Uses CL's native reader to parse and evaluate the next form."
-  (handler-case
-      (let* ((lisp-form (read file-stream)) ; Automatically parses the entire matched form safely!
-             (evaluation-result
-               (cond
-                 ;; Edge-case Handler: If the user wrote a single variable wrapped in parens, e.g. (*user-name*),
-                 ;; evaluate it as a standalone symbol value instead of trying to call it as a function.
-                 ((and (consp lisp-form)
-                       (null (cdr lisp-form))
-                       (symbolp (car lisp-form))
-                       (boundp (car lisp-form))
-                       (not (fboundp (car lisp-form))))
-                  (symbol-value (car lisp-form)))
+  (let (lisp-form)
+    (handler-case
+        (progn
+          (setf lisp-form (read file-stream)) ; Automatically parses the entire matched form safely!
+          (let ((evaluation-result
+                  (cond
+                    ;; Edge-case Handler: If the user wrote a single variable wrapped in parens, e.g. (*user-name*),
+                    ;; evaluate it as a standalone symbol value instead of trying to call it as a function.
+                    ((and (consp lisp-form)
+                          (null (cdr lisp-form))
+                          (symbolp (car lisp-form))
+                          (boundp (car lisp-form))
+                          (not (fboundp (car lisp-form))))
+                     (symbol-value (car lisp-form)))
 
-                 ;; Otherwise, execute the form natively
-                 (t (eval lisp-form)))))
+                    ;; Otherwise, execute the form natively
+                    (t (eval lisp-form)))))
 
-        ;; Silence top-level definitions and structural assignments
-        (if (and (consp lisp-form)
-                 (member (car lisp-form) '(defun defparameter defvar setf setq declaim proclaim define defmacro progn eval-when load require)))
-            ""
-            (if (null evaluation-result) "" (princ-to-string evaluation-result))))
-    (error (e)
-      (format nil "~C[1;31m[Template Error: ~A]~C[0m" #\Esc e #\Esc))))
+            ;; Silence top-level definitions and structural assignments
+            (if (and (consp lisp-form)
+                     (member (car lisp-form) '(defun defparameter defvar setf setq declaim proclaim define defmacro progn eval-when load require)))
+                ""
+                (if (null evaluation-result) "" (princ-to-string evaluation-result)))))
+      (error (e)
+        (if lisp-form
+            (error "Error evaluating form ~S: ~A" lisp-form e)
+            (error "Error reading form: ~A" e))))))
 
 (defun render-template (filename)
   "Reads a template file character-by-character and delegates code blocks to the reader."
@@ -72,7 +76,7 @@
 
 ;; --- Command Line Execution & Premium UI/UX ---
 
-(defvar *engine-version* (format nil "1.1.0-~A" (get-git-hash)))
+(defvar *engine-version* (format nil "1.1.1-~A" (get-git-hash)))
 
 (defvar *basic-lisp-source*
   #+lext-build

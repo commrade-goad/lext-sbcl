@@ -14,7 +14,6 @@ It maintains the same command-line ergonomics and features as the original [lext
 
 - **Embedded SBCL Engine:** A fully ANSI-compliant Common Lisp runtime optimized for template parsing and speed.
 - **Dynamic FFI Layer:** Direct, native bindings via SBCL's `sb-alien` wrapper interface with support for passing structs/unions by value or pointer.
-- **Scheme-style Ergonomics Wrapper:** Auto-imported macros and readers mapped directly in [basic.lisp](basic.lisp) (e.g., `#t`, `#f`, `define`, `fn`, `display`).
 - **Standard Library Preloader:** Running with script mode auto-configures a clean execution context with the stdlib preloaded.
 - **Flexible Argument Forwarding:** Pass command line arguments through to script runners seamlessly.
 - **Low-Level Capture Engine:** Capture standard C stdout outputs (e.g., `printf`, `puts` from C binaries) directly into Lisp strings using tmpfs-backed redirect structures.
@@ -60,7 +59,7 @@ If `[output-file]` is omitted, the rendered output is written to standard output
 ```
 
 ### 2. Lisp Script Runner Mode (`-s` / `--script`)
-To run a raw Lisp script directly with the Scheme ergonomics and FFI wrapper preloaded:
+To run a raw Lisp script directly with the FFI wrapper preloaded:
 ```bash
 ./lext -s <script-file> [arguments...]
 ```
@@ -75,12 +74,6 @@ To run a raw Lisp script directly with the Scheme ergonomics and FFI wrapper pre
 ## FFI & Compatibility API Reference
 
 LExt's standard library is declared in [basic.lisp](basic.lisp). When executing scripts via the `-s` / `--script` flag, the following forms and macros are preloaded:
-
-### Scheme Ergonomics
-- **`#t` / `#f`**: Custom reader macros that evaluate to Common Lisp's `t` and `nil` respectively.
-- **`(define name value)`**: Shorthand macro mapping directly to `defparameter`.
-- **`(fn args &body body)`**: Shorthand macro mapping directly to `lambda`.
-- **`(display msg)`**: Prints a message and instantly flushes standard output.
 
 ### FFI Library Management
 - **`(ffi-open lib-path)`**: Registers and loads a shared library file (`.so`). Pass `nil` to target the main process space (allowing direct calls to standard C library routines like `puts` or `abs`).

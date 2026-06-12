@@ -5,31 +5,7 @@
   (shadow 'addr))
 
 ;; =========================================================================
-;; 1. Scheme-ish Compatibility & Ergonomics Layer
-;; =========================================================================
-
-;; Map #f and #t to NIL and T in the Lisp reader for hybrid logic syntax
-(set-dispatch-macro-character #\# #\f (lambda (s c sub) (declare (ignore s c sub)) nil))
-(set-dispatch-macro-character #\# #\t (lambda (s c sub) (declare (ignore s c sub)) t))
-
-;; Clean declarative syntax aliases
-(defmacro define (name value)
-  "Convenient top-level parameter definitions mapping closer to Scheme."
-  `(defparameter ,name ,value))
-
-(defmacro fn (args &body body)
-  "Shorthand lambda instantiation expression syntax."
-  `(lambda ,args ,@body))
-
-(defun display (msg)
-  "Expressive print helper that instantly flushes to stdout.
-   Ideal for live template tracing without waiting for system buffers."
-  (format t "~A~%" msg)
-  (finish-output))
-
-
-;; =========================================================================
-;; 2. Low-Level POSIX Redirection Engine (Universal Capturing)
+;; 1. Low-Level POSIX Redirection Engine (Universal Capturing)
 ;; =========================================================================
 
 (sb-alien:define-alien-routine "fflush" sb-alien:int (stream (* t)))
@@ -78,7 +54,7 @@
   (s (* t)) (c sb-alien:int) (n sb-alien:unsigned-long))
 
 ;; =========================================================================
-;; 3. Rich Broad-Spectrum Type Translation Matrix
+;; 2. Rich Broad-Spectrum Type Translation Matrix
 ;; =========================================================================
 
 (eval-when (:compile-toplevel :load-toplevel :execute)
@@ -120,7 +96,7 @@
 
 
 ;; =========================================================================
-;; 4. Comprehensive Layout Declarators (Structs, Unions, Enums)
+;; 3. Comprehensive Layout Declarators (Structs, Unions, Enums)
 ;; =========================================================================
 
 (defmacro define-c-struct (name &rest fields)
@@ -146,7 +122,7 @@
 
 
 ;; =========================================================================
-;; 5. The Ultimate Unified Reference Operator (@) & Memory Math
+;; 4. The Ultimate Unified Reference Operator (@) & Memory Math
 ;; =========================================================================
 
 (defmacro c-size (type)
@@ -225,7 +201,7 @@
   `(memset ,dest ,byte-value ,byte-count))
 
 ;; =========================================================================
-;; 6. Memory Sandbox Isolation Arrays
+;; 5. Memory Sandbox Isolation Arrays
 ;; =========================================================================
 
 (defmacro with-alloc ((var type &optional (count 1)) &body body)
@@ -291,7 +267,7 @@
 
 
 ;; =========================================================================
-;; 7. Flexible Variadic Routine Importer Engine
+;; 6. Flexible Variadic Routine Importer Engine
 ;; =========================================================================
 
 (eval-when (:compile-toplevel :load-toplevel :execute)
