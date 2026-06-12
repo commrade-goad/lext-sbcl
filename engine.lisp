@@ -61,43 +61,103 @@
 
 ;; --- Command Line Execution & Premium UI/UX ---
 
+(defun find-basic-lisp ()
+  (let ((path1 (merge-pathnames "basic.lisp" sb-ext:*runtime-pathname*))
+        (path2 (merge-pathnames "basic.lisp" *default-pathname-defaults*)))
+    (cond
+      ((probe-file path1) path1)
+      ((probe-file path2) path2)
+      (t nil))))
+
 (defun print-help ()
   (format *error-output* "~C[1;36mLExt Template Engine~C[0m - High-Performance SBCL template renderer~%" #\Esc #\Esc)
   (format *error-output* "~%~C[1mUSAGE:~C[0m~%" #\Esc #\Esc)
   (format *error-output* "  lext <input-file> [output-file]~%")
+  (format *error-output* "  lext -s/--script <script-file>~%")
+  (format *error-output* "  lext -h/--help~%")
+  (format *error-output* "  lext -v/--version~%")
   (format *error-output* "~%~C[1mOPTIONS:~C[0m~%" #\Esc #\Esc)
-  (format *error-output* "  ~C[32m<input-file>~C[0m   The template HTML/text file to render @@ forms.~%" #\Esc #\Esc)
-  (format *error-output* "  ~C[32m[output-file]~C[0m  (Optional) File path to write the output. Defaults to stdout.~%~%" #\Esc #\Esc))
+  (format *error-output* "  ~C[32m<input-file>~C[0m        The template HTML/text file to render @@ forms.~%" #\Esc #\Esc)
+  (format *error-output* "  ~C[32m[output-file]~C[0m       (Optional) File path to write the output. Defaults to stdout.~%" #\Esc #\Esc)
+  (format *error-output* "  ~C[32m-s, --script~C[0m       Run <script-file> via SBCL with LExt standard library preloaded.~%" #\Esc #\Esc)
+  (format *error-output* "  ~C[32m-h, --help~C[0m         Show this help information.~%" #\Esc #\Esc)
+  (format *error-output* "  ~C[32m-v, --version~C[0m      Show LExt version information.~%~%" #\Esc #\Esc))
 
 (defun main ()
   (let* ((args sb-ext:*posix-argv*)
          ;; The first element is the script/executable name, the rest are user args
          (user-args (cdr args))
-         (input-file (first user-args))
-         (output-file (second user-args)))
+         (first-arg (first user-args)))
     (cond
-      ((and input-file output-file)
-       (handler-case
-           (let ((result (render-template input-file)))
-             (with-open-file (out-stream output-file
-                                         :direction :output
-                                         :if-exists :supersede
-                                         :if-does-not-exist :create)
-               (write-string result out-stream))
-             (format *error-output* "~C[1;32m[Success]~C[0m Rendered ~A to ~A~%" #\Esc #\Esc input-file output-file)
-             (sb-ext:exit :code 0))
-         (error (e)
-           (format *error-output* "~C[1;31m[Error]~C[0m Failed to render: ~A~%" #\Esc #\Esc e)
-           (sb-ext:exit :code 1))))
-      (input-file
-       (handler-case
-           (let ((result (render-template input-file)))
-             (write-string result)
-             (finish-output)
-             (sb-ext:exit :code 0))
-         (error (e)
-           (format *error-output* "~C[1;31m[Error]~C[0m Failed to render: ~A~%" #\Esc #\Esc e)
-           (sb-ext:exit :code 1))))
+      ;; Help flag
+      ((member first-arg '("-h" "--help") :test #'string=)
+       (print-help)
+       (sb-ext:exit :code 0))
+      
+      ;; Version flag
+      ((member first-arg '("-v" "--version") :test #'string=)
+       (format *error-output* "~C[1;36mLExt~C[0m version 1.1.0~%" #\Esc #\Esc)
+       (sb-ext:exit :code 0))
+      
+      ;; Script flag
+      ((member first-arg '("-s" "--script") :test #'string=)
+       (let ((script-path (second user-args)))
+         (if script-path
+             (let ((basic-path (find-basic-lisp)))
+               (if basic-path
+                   (let ((process (sb-ext:run-program "sbcl"
+                                                      (list "--load" (namestring basic-path)
+                                                            "--script" script-path)
+                                                      :search t
+                                                      :output *standard-output*
+                                                      :error *error-output*
+                                                      :input *standard-input*)))
+                     (if process
+                         (sb-ext:exit :code (sb-ext:process-exit-code process))
+                         (progn
+                           (format *error-output* "~C[1;31m[Error]~C[0m Failed to launch sbcl.~%" #\Esc #\Esc)
+                           (sb-ext:exit :code 1))))
+                   (progn
+                     (format *error-output* "~C[1;31m[Error]~C[0m Could not locate basic.lisp.~%" #\Esc #\Esc)
+                     (sb-ext:exit :code 1))))
+             (progn
+               (format *error-output* "~C[1;31m[Error]~C[0m No script file specified.~%~%" #\Esc #\Esc)
+               (print-help)
+               (sb-ext:exit :code 1)))))
+      
+      ;; Unknown option check
+      ((and first-arg (char= (char first-arg 0) #\-))
+       (format *error-output* "~C[1;31m[Error]~C[0m Unknown option: ~A~%~%" #\Esc #\Esc first-arg)
+       (print-help)
+       (sb-ext:exit :code 1))
+      
+      ;; File rendering
+      (first-arg
+       (let ((input-file first-arg)
+             (output-file (second user-args)))
+         (if output-file
+             (handler-case
+                 (let ((result (render-template input-file)))
+                   (with-open-file (out-stream output-file
+                                               :direction :output
+                                               :if-exists :supersede
+                                               :if-does-not-exist :create)
+                     (write-string result out-stream))
+                   (format *error-output* "~C[1;32m[Success]~C[0m Rendered ~A to ~A~%" #\Esc #\Esc input-file output-file)
+                   (sb-ext:exit :code 0))
+               (error (e)
+                 (format *error-output* "~C[1;31m[Error]~C[0m Failed to render: ~A~%" #\Esc #\Esc e)
+                 (sb-ext:exit :code 1)))
+             (handler-case
+                 (let ((result (render-template input-file)))
+                   (write-string result)
+                   (finish-output)
+                   (sb-ext:exit :code 0))
+               (error (e)
+                 (format *error-output* "~C[1;31m[Error]~C[0m Failed to render: ~A~%" #\Esc #\Esc e)
+                 (sb-ext:exit :code 1))))))
+      
+      ;; No arguments
       (t
        (print-help)
        (sb-ext:exit :code 1)))))
