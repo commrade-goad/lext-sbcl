@@ -1,8 +1,8 @@
 # LExt SBCL: High-Performance Template Engine & Script Runner in Common Lisp
 
-`lext-sbcl` is a complete port of the custom Scheme-based `lext` template preprocessor and script runner to **Steel Bank Common Lisp (SBCL)**. It replaces the original C-embedded Scheme s7 interpreter and `libffi` integration with native, compiled Common Lisp running on SBCL's highly optimized compiler and its premium native foreign function interface (`sb-alien`).
+`lext-sbcl` is a complete port of the original Scheme-based [lext](https://github.com/commrade-goad/lext) template preprocessor and script runner to **Steel Bank Common Lisp (SBCL)**. It replaces the original C-embedded Scheme s7 interpreter and `libffi` integration with native, compiled Common Lisp running on SBCL's highly optimized compiler and its premium native foreign function interface (`sb-alien`).
 
-It maintains the same command-line ergonomics and features as the original `lext` but introduces:
+It maintains the same command-line ergonomics and features as the original [lext](https://github.com/commrade-goad/lext) but introduces:
 1. **Unmatched Execution Speed:** Native compilation via SBCL's runtime instead of an interpreted s7 Scheme environment.
 2. **Zero-Dependency Standalone Binary:** Compiles into a single optimized native executable (`lext`) that embeds its standard library (`basic.lisp`) as an internal string constant, making it completely self-contained.
 3. **Robust Scripting Isolation:** The `-s` / `--script` runner spawns an isolated SBCL subprocess to execute script files, keeping your main process environment clean and robust.
