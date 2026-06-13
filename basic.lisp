@@ -4,6 +4,12 @@
 (eval-when (:compile-toplevel :load-toplevel :execute)
   (shadow 'addr))
 
+(defun display (msg)
+  "Expressive print helper that instantly flushes to stdout.
+   Ideal for live template tracing without waiting for system buffers."
+  (format t "~A~%" msg)
+  (finish-output))
+
 ;; =========================================================================
 ;; 1. Low-Level POSIX Redirection Engine (Universal Capturing)
 ;; =========================================================================

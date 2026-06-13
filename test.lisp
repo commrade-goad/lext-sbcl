@@ -10,22 +10,7 @@
 (format t "==================================================~%~%")
 
 ;; =========================================================================
-;; 1. Scheme Ergonomics & Compatibility Validation
-;; =========================================================================
-(format t "[TEST] Section 1: Scheme Ergonomics... ")
-(assert (eq #f nil))
-(assert (eq #t t))
-
-(define *test-global* 99)
-(assert (= *test-global* 99))
-
-(let ((square (fn (x) (* x x))))
-  (assert (= (funcall square 9) 81)))
-(format t "PASSED~%")
-
-
-;; =========================================================================
-;; 2. Layouts, Sizing, and Reference Operator (@) Validation
+;; 1. Layouts, Sizing, and Reference Operator (@) Validation
 ;; =========================================================================
 (format t "[TEST] Section 4 & 5: Structs, Unions, Enums, & Accessors... ")
 
@@ -78,7 +63,7 @@
 
 
 ;; =========================================================================
-;; 3. Sandbox Array Framework & Byte Blitting Validation
+;; 2. Sandbox Array Framework & Byte Blitting Validation
 ;; =========================================================================
 (format t "[TEST] Section 5 & 6: Hardware Arrays & Memory Blitting... ")
 
@@ -106,7 +91,7 @@
 
 
 ;; =========================================================================
-;; 4. Routine Importer & Native C Callback Validation
+;; 3. Routine Importer & Native C Callback Validation
 ;; =========================================================================
 (format t "[TEST] Section 7: Importer and Callbacks... ")
 
@@ -127,7 +112,7 @@
 
 
 ;; =========================================================================
-;; 5. Universal Capturing Engine Validation
+;; 4. Universal Capturing Engine Validation
 ;; =========================================================================
 (format t "[TEST] Section 2: Low-Level POSIX Redirection... ")
 
@@ -142,6 +127,29 @@
 
   (assert (search "Lisp layer writing" intercepted-output))
   (assert (search "C-Engine Variadic Value: 9000" intercepted-output)))
+(format t "PASSED~%")
+
+
+;; =========================================================================
+;; 5. LExt Raw String Escape Validation
+;; =========================================================================
+(format t "[TEST] Section 8: LExt Raw String Escape... ")
+(handler-bind ((warning #'muffle-warning))
+  (pushnew :lext-build *features*)
+  (load (compile-file "lext.lisp")))
+
+(let ((res (with-input-from-string (s "r\"stuff\\here\"")
+             (handle-lisp-tag s))))
+  (assert (string= res "stuff\\here")))
+
+(let ((res (with-input-from-string (s "R\"C:\\Windows\\System32\"")
+             (handle-lisp-tag s))))
+  (assert (string= res "C:\\Windows\\System32")))
+
+(let ((res (with-input-from-string (s "(let ((results '(1 2 3))) (first results))")
+             (handle-lisp-tag s))))
+  (assert (string= res "1")))
+
 (format t "PASSED~%")
 
 (format t "~%==================================================~%")

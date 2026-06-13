@@ -6,11 +6,28 @@
          (basic-path (merge-pathnames "basic.lisp" source-path)))
     (load basic-path)))
 
+(defun raw-string-reader (stream char)
+  (let ((next-char (peek-char nil stream nil nil t)))
+    (if (char= next-char #\")
+        (progn
+          (read-char stream nil nil t) ; consume the #\"
+          (with-output-to-string (out)
+            (loop for c = (read-char stream t nil t)
+                  until (char= c #\")
+                  do (write-char c out))))
+        (let ((*readtable* (copy-readtable *readtable*)))
+          (set-syntax-from-char #\r #\r *readtable* nil)
+          (set-syntax-from-char #\R #\R *readtable* nil)
+          (unread-char char stream)
+          (read stream t nil t)))))
+
 (defun handle-lisp-tag (file-stream)
   "Triggered when @@ is found. Uses CL's native reader to parse and evaluate the next form."
   (let (lisp-form)
     (handler-case
-        (progn
+        (let ((*readtable* (copy-readtable)))
+          (set-macro-character #\r #'raw-string-reader t *readtable*)
+          (set-macro-character #\R #'raw-string-reader t *readtable*)
           (setf lisp-form (read file-stream)) ; Automatically parses the entire matched form safely!
           (let ((evaluation-result
                   (cond
@@ -33,8 +50,8 @@
                 (if (null evaluation-result) "" (princ-to-string evaluation-result)))))
       (error (e)
         (if lisp-form
-            (error "Error evaluating form ~S: ~A" lisp-form e)
-            (error "Error reading form: ~A" e))))))
+            (error "Error evaluating form ~S: ~S" lisp-form e)
+            (error "Error reading form: ~S" e))))))
 
 (defun render-template (filename)
   "Reads a template file character-by-character and delegates code blocks to the reader."
